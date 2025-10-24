@@ -60,7 +60,7 @@ const rssParser = new Parser({
 
 // Branding
 const HEADER = '🌍 *Opportunities4Africa* 🌍\n━━━━━━━━━━━━━━━━━━━━\n\n';
-const FOOTER = '\n\n━━━━━━━━━━━━━━━━━━━━\n💬 Questions? Contact @Almuktechnologies\n⚡ *Powered by Almuk* ⚡';
+const FOOTER = '\n\n━━━━━━━━━━━━━━━━━━━━\n⚡ *Powered by Almuk* ⚡';
 
 // State management
 let postedOpportunities = new Set();
@@ -70,9 +70,11 @@ let statsCounter = {
   volunteer: 0, 
   ngo: 0, 
   tech: 0,
+  web3: 0,  // ADD THIS LINE
   lastScan: null,
   scansToday: 0
 };
+
 let botState = { 
   isPaused: false,
   pausedAt: null,
@@ -115,8 +117,17 @@ const sources = {
     rss: [
       { name: 'RemoteOK', url: 'https://remoteok.com/remote-dev-jobs.rss' }
     ]
+  },
+  web3: {
+    rss: [
+      { name: 'CryptoJobsList', url: 'https://cryptojobslist.com/rss' },
+      { name: 'Web3 Career', url: 'https://web3.career/feed' },
+      { name: 'Bankless Jobs', url: 'https://jobs.bankless.com/feed' },
+      { name: 'UseWeb3 Jobs', url: 'https://www.useweb3.xyz/jobs/feed' }
+    ]
   }
 };
+
 
 // ===========================
 // HELPER FUNCTIONS
@@ -238,7 +249,8 @@ function formatOpportunity(opp) {
     scholarships: '🎓',
     volunteer: '🤝',
     ngo: '🏢',
-    tech: '💻'
+    tech: '💻',
+    web3: '🌐'  // ADD THIS LINE (or use ₿, ⛓️, 🔷)
   }[opp.category] || '📢';
 
   return `
@@ -350,10 +362,12 @@ Last Scan: ${statsCounter.lastScan || 'Not yet'}
 🤝 Volunteer: ${statsCounter.volunteer}
 🏢 NGO: ${statsCounter.ngo}
 💻 Tech: ${statsCounter.tech}
+🌐 Web3: ${statsCounter.web3}
   `;
 
   ctx.reply(msg, { parse_mode: 'Markdown' });
 });
+
 
 // Scan Now Button
 
