@@ -60,7 +60,7 @@ const rssParser = new Parser({
 
 // Branding
 const HEADER = '🌍 *Opportunities4Africa* 🌍\n━━━━━━━━━━━━━━━━━━━━\n\n';
-const FOOTER = '\n\n━━━━━━━━━━━━━━━━━━━━\n⚡ *Powered by Almuk* ⚡';
+const FOOTER = '\n\n━━━━━━━━━━━━━━━━━━━━\n💬 Questions? Contact @Almuktechnologies\n⚡ *Powered by Almuk* ⚡';
 
 // State management
 let postedOpportunities = new Set();
