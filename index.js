@@ -410,19 +410,23 @@ bot.hears('📚 Sources', (ctx) => {
 });
 
 // Settings Button
+// Settings Button
 bot.hears('⚙️ Settings', (ctx) => {
   if (!isAdmin(ctx.from.id)) return;
 
   const msg = `
 ⚙️ *Settings*
 
-Mode: Development
+Mode: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}
 Channel: ${CHANNEL_ID}
-Auto-scan: ${enableBackgroundCron ? 'Enabled' : 'Disabled'}
+Auto-scan: ${enableBackgroundCron ? 'Enabled (every 30 min)' : 'Disabled'}
+Self-ping: ${enableSelfPing ? 'Enabled (every 12 min)' : 'Disabled'}
+Uptime: ${Math.floor(process.uptime() / 60)} minutes
   `;
 
   ctx.reply(msg, { parse_mode: 'Markdown' });
 });
+
 
 // Close Menu Button
 bot.hears('❌ Close Menu', (ctx) => {
@@ -434,11 +438,67 @@ bot.hears('❌ Close Menu', (ctx) => {
 // CRON JOBS
 // ===========================
 
+// ===========================
+// CRON JOBS
+// ===========================
+
 if (enableBackgroundCron) {
+  console.log('✅ Setting up scan cron (every 30 minutes)');
+  
   cron.schedule('*/30 * * * *', async () => {
-    if (!botState.isPaused) {
-      console.log('⏰ Scheduled scan');
-      await discoverAndPostOpportunities();
+    console.log('⏰ Cron triggered at', new Date().toLocaleString());
+    if (botState.isPaused) {
+      console.log('⏸️ Bot paused, skipping scheduled scan');
+      return;
+    }
+    console.log('🔍 Starting scheduled scan...');
+    await discoverAndPostOpportunities().catch(e =>
+      console.error('❌ Scheduled scan error:', e.message)
+    );
+  });
+}
+
+// ===========================
+// SELF-PING (KEEP AWAKE)
+// ===========================
+
+if (enableSelfPing) {
+  const KEEPALIVE_URL =
+    process.env.RENDER_EXTERNAL_URL ||
+    process.env.RENDER_URL ||
+    'https://opportunities4africa-bot.onrender.com';
+
+  console.log(`✅ Self-ping cron enabled → ${KEEPALIVE_URL}/health`);
+
+  cron.schedule('*/12 * * * *', async () => {
+    try {
+      await axios.get(`${KEEPALIVE_URL}/health`, { timeout: 8000 });
+      console.log('🏓 Self-ping successful');
+    } catch (e) {
+      console.error('❌ Self-ping failed:', e.message);
+    }
+  });
+}
+
+
+// ===========================
+// SELF-PING (KEEP AWAKE)
+// ===========================
+
+if (enableSelfPing) {
+  const KEEPALIVE_URL =
+    process.env.RENDER_EXTERNAL_URL ||
+    process.env.RENDER_URL ||
+    'https://opportunities4africa-bot.onrender.com';
+
+  console.log(`✅ Self-ping cron enabled → ${KEEPALIVE_URL}/health`);
+
+  cron.schedule('*/12 * * * *', async () => {
+    try {
+      await axios.get(`${KEEPALIVE_URL}/health`, { timeout: 8000 });
+      console.log('🏓 Self-ping successful');
+    } catch (e) {
+      console.error('❌ Self-ping failed:', e.message);
     }
   });
 }
@@ -484,6 +544,34 @@ bot.catch((err, ctx) => {
 // ===========================
 // START BOT
 // ===========================
-
 bot.launch()
-  .then
+  .then(() => {
+    console.log('✅ Bot launched successfully\n');
+
+    // Initial scan 10s after startup (production only)
+    if (enableBackgroundCron && !botState.isPaused) {
+      console.log('🔍 Scheduling initial scan in 10 seconds...');
+      setTimeout(() => {
+        discoverAndPostOpportunities()
+          .then(() => console.log('✅ Initial scan done'))
+          .catch(err => console.error('❌ Initial scan failed:', err.message));
+      }, 10000);
+    }
+  })
+  .catch(err => {
+    console.error('❌ Bot launch failed:', err.message);
+    process.exit(1);
+  });
+
+// Graceful shutdown
+process.once('SIGINT', () => {
+  console.log('\n⚠️ SIGINT received. Shutting down gracefully...');
+  bot.stop('SIGINT');
+  process.exit(0);
+});
+
+process.once('SIGTERM', () => {
+  console.log('\n⚠️ SIGTERM received. Shutting down gracefully...');
+  bot.stop('SIGTERM');
+  process.exit(0);
+});
